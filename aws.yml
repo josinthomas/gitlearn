@@ -1,0 +1,42 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+          
+   - name: "aws-infrastructure creating ssh key pair"
+     ec2_key:
+       name: wordpress-key
+       region: ap-south-1
+     register: keypair_out
+
+     
+   - debug:
+       var: keypair_out  
+
+
+   - name: "aws-infrastructure saving ssh key pair"
+     copy:
+       content: "{{keypair_out.key.private_key}}"   
+       dest: ./wordpress-key.pem
+       mode: 0400
+     when:  keypair_out.changed   
+
+   - name: "Launching Ec2 Instance"
+     ec2:
+       instance_type: t2.micro  
+       key_name: wordpress-key
+       image: ami-08f63db601b82ff5f
+       region: ap-south-1
+       group: Ansible_firewall
+       wait: yes
+       count_tag: 
+         Name: ansible
+       instance_tags:
+         Name: ansible 
+       exact_count: 1
+     register: ec2_status
+
+
+   - debug:
+       var: ec2_status      
